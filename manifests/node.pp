@@ -63,6 +63,12 @@
 #                           Defaults to '/etc/mcollective/policies'.
 #   ['direct_addressing'] - Enable direct addressing.
 #                           Defaults to '0'.
+#   ['registration']      - The registration plugin to use
+#                           Defaults to 'AgentList.
+#   ['registerinterval']  - Registration interval
+#                           Defaults to '300'.
+#   ['registration_collective']    - The registration collective to use
+#                                    Defaults to undef.
 #   ['ssl_source_dir']    - Where to get certificates from.
 #                           Defaults to undef.
 #
@@ -113,6 +119,9 @@ class mcollective::node (
   $policies_dir = $mcollective::policies_dir,
   $direct_addressing = $mcollective::direct_addressing,
   $ssl_source_dir = $mcollective::ssl_source_dir,
+  $registration = $mcollective::registration,
+  $registration_collective = $mcollective::registration_collective,
+  $registerinterval = $mcollective::registerinterval,
 ) {
 
   if !defined(Class['::mcollective']) {
@@ -123,6 +132,19 @@ class mcollective::node (
   include ::ruby::gems
 
   class { '::mcollective::node::packages': } ->
+  file { '/etc/mcollective/facts.yaml':
+    ensure   => present,
+    backup   => false,
+    owner    => 'root',
+    group    => 'root',
+    mode     => '0400',
+    content  => template('mcollective/facts.yaml.erb'),
+    loglevel => 'warning',  # this is needed to avoid it being logged and reported
+                            # on every run
+                            # avoid including highly-dynamic facts as they will
+                            # cause unnecessary template writes and
+                            # service restarts
+  } ->
   class { '::mcollective::node::files': } ~>
   class { '::mcollective::node::service': }
 
